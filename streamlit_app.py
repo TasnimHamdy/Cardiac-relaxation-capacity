@@ -17,7 +17,7 @@ st.set_page_config(page_title="LVEDP Prediction & Analysis", layout="wide")
 # 1. Load Model
 # ===========================
 @st.cache_resource
-def load_model(path="optimized_lvedp_model_final.joblib"):
+def load_model(path="optimized_lvedp_model_cv.joblib"):
     model_data = joblib.load(path)
     return model_data
 
