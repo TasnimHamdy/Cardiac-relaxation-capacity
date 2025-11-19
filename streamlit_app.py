@@ -15,7 +15,20 @@ def load_model():
 model_data = load_model()
 model = model_data['model']
 scaler = model_data['scaler']
-features = model_data['features']
+
+# -----------------------
+# Fixed Features List
+# -----------------------
+features = [
+    "LVEF (%)",
+    "Ischemia duration (hr)",
+    "LV global long. Strain (%)",
+    "LA reservoir (%)",
+    "E/E`",
+    "Non-Ant STEMI",
+    "LA contraction (%)",
+    "Mitral E velocity (cm/s)"
+]
 
 st.title("LVEDP Prediction App")
 st.write("Select prediction mode:")
@@ -36,10 +49,7 @@ if prediction_type == "Single Prediction":
             input_data[feat] = st.number_input(feat, value=0.0)
     
     if st.button("Predict LVEDP"):
-        X_input = pd.DataFrame([input_data])
-        # Strip spaces and match features exactly
-        X_input.columns = X_input.columns.str.strip()
-        X_input = X_input[features]  # ensure correct order
+        X_input = pd.DataFrame([input_data], columns=features)  # maintain order
         X_scaled = scaler.transform(X_input)
         pred = model.predict(X_scaled)
         st.success(f"Predicted LVEDP: {pred[0]:.2f} mmHg")
@@ -58,7 +68,7 @@ else:
         if missing_features:
             st.error(f"Missing columns in Excel: {missing_features}")
         else:
-            X_batch = df[features]
+            X_batch = df[features]  # preserve order
             X_scaled = scaler.transform(X_batch)
             predictions = model.predict(X_scaled)
             df['Predicted LVEDP'] = predictions
@@ -69,3 +79,4 @@ else:
             output_file = "LVEDP_Predictions.xlsx"
             df.to_excel(output_file, index=False)
             st.download_button("Download Predictions", output_file)
+
