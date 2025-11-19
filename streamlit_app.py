@@ -2,13 +2,12 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-# -------------------------------
-# Load model
-# -------------------------------
+# =========================
+# Load the trained model
+# =========================
 @st.cache_data
 def load_model():
-    model_path = "optimized_lvedp_model_cv.joblib"
-    model_data = joblib.load(model_path)
+    model_data = joblib.load("optimized_lvedp_model_13_features.joblib")
     return model_data
 
 model_data = load_model()
@@ -16,62 +15,27 @@ model = model_data['model']
 scaler = model_data['scaler']
 features = model_data['features']
 
-# -------------------------------
+# =========================
 # Streamlit App
-# -------------------------------
+# =========================
 st.title("LVEDP Prediction App")
-st.write("Choose prediction type:")
+st.write("Enter patient data to predict LVEDP:")
 
-prediction_type = st.radio("Prediction Mode", ("Single Prediction", "Batch Prediction"))
+# ------------------------
+# User Inputs
+# ------------------------
+input_data = {}
+for feat in features:
+    # For simplicity, all features are number inputs
+    input_data[feat] = st.number_input(feat, value=0.0)
 
-# ================================
-# Single Prediction
-# ================================
-if prediction_type == "Single Prediction":
-    st.subheader("Enter Patient Data")
-    
-    input_data = {}
-    for feat in features:
-        if feat == "Non-Ant STEMI":
-            input_data[feat] = st.selectbox(feat, options=[0,1])
-        else:
-            input_data[feat] = st.number_input(feat, value=0.0)
-    
-    if st.button("Predict LVEDP"):
-        X_input = pd.DataFrame([input_data])
-        # Ensure exact order and clean column names
-        X_input = X_input[features]
-        X_input.columns = [f.strip() for f in X_input.columns]
-        X_scaled = scaler.transform(X_input)
-        pred = model.predict(X_scaled)
-        st.success(f"Predicted LVEDP: {pred[0]:.2f} mmHg")
-
-# ================================
-# Batch Prediction
-# ================================
-else:
-    st.subheader("Upload Excel for Batch Prediction")
-    uploaded_file = st.file_uploader("Choose Excel file", type=["xlsx", "xls"])
-    
-    if uploaded_file:
-        df = pd.read_excel(uploaded_file)
-        
-        missing_features = [f for f in features if f not in df.columns]
-        if missing_features:
-            st.error(f"Missing columns in Excel: {missing_features}")
-        else:
-            X_batch = df[features].copy()
-            X_batch.columns = [f.strip() for f in X_batch.columns]
-            X_scaled = scaler.transform(X_batch)
-            predictions = model.predict(X_scaled)
-            
-            df['Predicted LVEDP'] = predictions
-            st.success("Predictions Completed!")
-            st.dataframe(df)
-            
-            # Download results
-            output_file = "LVEDP_Predictions.xlsx"
-            df.to_excel(output_file, index=False)
-            st.download_button("Download Predictions", output_file)
-
-
+# ------------------------
+# Prediction Button
+# ------------------------
+if st.button("Predict LVEDP"):
+    X_input = pd.DataFrame([input_data])
+    # Scale features
+    X_scaled = scaler.transform(X_input)
+    # Predict
+    pred = model.predict(X_scaled)
+    st.success(f"Predicted LVEDP: {pred[0]:.2f} mmHg")
