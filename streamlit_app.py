@@ -10,7 +10,7 @@ import os
 import warnings
 warnings.filterwarnings('ignore')
 
-# Set page configuration
+# ------------------ Page Configuration ------------------
 st.set_page_config(
     page_title="LVEDP Prediction Tool",
     page_icon="❤️",
@@ -18,7 +18,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# ------------------ Custom CSS ------------------
 st.markdown("""
 <style>
     .main-header {
@@ -40,12 +40,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# ------------------ Load Model ------------------
 def load_model():
-    """Load the trained joblib model"""
+    """Load the trained joblib model safely"""
     model_path = "optimized_lvedp_model.joblib"
     if not os.path.exists(model_path):
         st.error(f"❌ Model file not found at {model_path}")
-        st.info("💡 Please make sure you have uploaded 'optimized_lvedp_model.joblib' to this directory.")
+        st.info("💡 Please upload 'optimized_lvedp_model.joblib' to this directory.")
         return None
     try:
         model_data = load(model_path)
@@ -54,6 +55,7 @@ def load_model():
         st.error(f"❌ Failed to load model: {e}")
         return None
 
+# ------------------ Prediction Function ------------------
 def predict_lvedp(model_data, input_features):
     """Predict LVEDP for given features"""
     try:
@@ -65,6 +67,7 @@ def predict_lvedp(model_data, input_features):
         st.error(f"Prediction error: {e}")
         return None, None
 
+# ------------------ Main App ------------------
 def main():
     st.markdown('<h1 class="main-header">❤️ LVEDP Prediction Tool</h1>', unsafe_allow_html=True)
     st.write("Predict Left Ventricular End-Diastolic Pressure using clinical parameters")
@@ -87,13 +90,13 @@ def main():
     else:
         model_information_mode(model_data)
 
+# ------------------ Single Prediction ------------------
 def single_prediction_mode(model_data):
     st.header("🔍 Single Patient Prediction")
     features = model_data['features']
     input_features = []
 
     col1, col2 = st.columns(2)
-    # Split features between two columns
     for col, feats in zip([col1, col2], [features[:len(features)//2], features[len(features)//2:]]):
         with col:
             for feature in feats:
@@ -127,9 +130,13 @@ def single_prediction_mode(model_data):
         else:
             st.error("❌ Please fill all input fields.")
 
+# ------------------ Batch Prediction ------------------
 def batch_prediction_mode(model_data):
     st.header("📊 Batch Prediction")
-    uploaded_file = st.file_uploader("Upload Excel file with patient data", type=['xlsx','xls'])
+    
+    st.write("Upload an Excel file with patient data (features should match model features).")
+    uploaded_file = st.file_uploader("Upload Excel file", type=['xlsx','xls'])
+    
     if uploaded_file is not None:
         try:
             df = pd.read_excel(uploaded_file)
@@ -154,21 +161,27 @@ def batch_prediction_mode(model_data):
                     else: return 'Elevated'
                 df['Clinical_Status'] = df['Predicted_LVEDP'].apply(interpret)
                 
+                st.subheader("📈 Prediction Results")
                 st.dataframe(df)
+                
                 csv = df.to_csv(index=False)
                 st.download_button("📥 Download CSV", data=csv, file_name="lvedp_predictions.csv")
         except Exception as e:
             st.error(f"❌ Error reading file: {e}")
 
+# ------------------ Model Info ------------------
 def model_information_mode(model_data):
     st.header("ℹ️ Model Information")
     st.write(f"**Model Type:** {model_data['model_type']}")
     st.write(f"**Target:** {model_data['target']}")
-    st.write(f"**Features:** {len(model_data['features'])}")
+    st.write(f"Number of Features: {len(model_data['features'])}")
     st.write(f"Training samples: {model_data['data_info']['training_samples']}")
     st.write(f"Test samples: {model_data['data_info']['test_samples']}")
-    perf = model_data['performance']
-    st.write(f"Test MAE: {perf['test_mae']:.3f}, Test R²: {perf['test_r2']:.3f}")
     
+    perf = model_data['performance']
+    st.write(f"Test MAE: {perf['test_mae']:.3f}")
+    st.write(f"Test R²: {perf['test_r2']:.3f}")
+
+# ------------------ Run App ------------------
 if __name__ == "__main__":
     main()
