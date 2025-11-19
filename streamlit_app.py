@@ -1,182 +1,127 @@
-# streamlit_app.py
-from joblib import load
+# =====================================
+# STREAMLIT APP - LVEDP PREDICTION & VISUALIZATION
+# =====================================
+
 import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import warnings
-import os
-warnings.filterwarnings('ignore')
+import seaborn as sns
+import joblib
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_absolute_error
 
-# ------------------ Page Configuration ------------------
-st.set_page_config(
-    page_title="LVEDP Prediction Tool",
-    page_icon="❤️",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="LVEDP Prediction & Analysis", layout="wide")
 
-# ------------------ Custom CSS ------------------
-st.markdown("""
-<style>
-    .main-header {
-        font-size: 2.5rem;
-        color: #1f77b4;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .prediction-card {
-        background-color: #f0f2f6;
-        padding: 1.5rem;
-        border-radius: 10px;
-        border-left: 5px solid #1f77b4;
-        margin-bottom: 1rem;
-    }
-</style>
-""", unsafe_allow_html=True)
+# ===========================
+# 1. Load Model
+# ===========================
+@st.cache_resource
+def load_model(path="optimized_lvedp_model_final.joblib"):
+    model_data = joblib.load(path)
+    return model_data
 
-# ------------------ Load Model ------------------
-def load_model():
-    """Load the trained joblib model safely"""
-    model_path = "optimized_lvedp_model.joblib"
-    if not os.path.exists(model_path):
-        st.error(f"❌ Model file not found at {model_path}")
-        st.info("💡 Please upload 'optimized_lvedp_model.joblib' to this directory.")
-        return None
+model_data = load_model()
+optimized_ensemble = model_data["model"]
+features = model_data["features"]
+scaler = model_data["scaler"]
+target = model_data["target"]
+
+st.title("🏥 LVEDP Prediction & Statistical Analysis")
+st.markdown("Upload your patient dataset (CSV or Excel) for prediction and analysis.")
+
+# ===========================
+# 2. File Uploader
+# ===========================
+uploaded_file = st.file_uploader("Upload CSV or Excel", type=["csv", "xlsx"])
+if uploaded_file is not None:
     try:
-        model_data = load(model_path)
-        return model_data
-    except Exception as e:
-        st.error(f"❌ Failed to load model: {e}")
-        return None
-
-# ------------------ Prediction Function ------------------
-def predict_lvedp(model_data, input_features):
-    """Predict LVEDP for given features"""
-    try:
-        input_scaled = model_data['scaler'].transform([input_features])
-        prediction = model_data['model'].predict(input_scaled)[0]
-        confidence = 1.96 * model_data['performance']['test_mae']
-        return prediction, confidence
-    except Exception as e:
-        st.error(f"Prediction error: {e}")
-        return None, None
-
-# ------------------ Main App ------------------
-def main():
-    st.markdown('<h1 class="main-header">❤️ LVEDP Prediction Tool</h1>', unsafe_allow_html=True)
-    st.write("Predict Left Ventricular End-Diastolic Pressure using clinical parameters")
-    
-    # Load model
-    model_data = load_model()
-    if model_data is None:
-        return
-    
-    st.sidebar.title("Navigation")
-    app_mode = st.sidebar.selectbox(
-        "Choose Mode",
-        ["Single Prediction", "Batch Prediction", "Model Information"]
-    )
-    
-    if app_mode == "Single Prediction":
-        single_prediction_mode(model_data)
-    elif app_mode == "Batch Prediction":
-        batch_prediction_mode(model_data)
-    else:
-        model_information_mode(model_data)
-
-# ------------------ Single Prediction ------------------
-def single_prediction_mode(model_data):
-    st.header("🔍 Single Patient Prediction")
-    features = model_data['features']
-    input_features = []
-
-    col1, col2 = st.columns(2)
-    for col, feats in zip([col1, col2], [features[:len(features)//2], features[len(features)//2:]]):
-        with col:
-            for feature in feats:
-                if "LVEF" in feature:
-                    value = st.number_input(feature, min_value=10.0, max_value=80.0, value=55.0)
-                elif "E/E" in feature:
-                    value = st.number_input(feature, min_value=5.0, max_value=25.0, value=10.0)
-                elif "duration" in feature.lower():
-                    value = st.number_input(feature, min_value=0.0, max_value=24.0, value=6.0)
-                elif "reservoir" in feature.lower():
-                    value = st.number_input(feature, min_value=10.0, max_value=60.0, value=35.0)
-                elif "STEMI" in feature:
-                    value = st.selectbox(feature, [0,1])
-                elif "Group" in feature:
-                    value = st.number_input(feature, min_value=1, max_value=3, value=2)
-                else:
-                    value = st.number_input(feature, value=0.0, step=0.1)
-                input_features.append(value)
-    
-    if st.button("🎯 Predict LVEDP"):
-        if len(input_features) == len(features):
-            prediction, confidence = predict_lvedp(model_data, input_features)
-            if prediction is not None:
-                st.markdown(f"### Predicted LVEDP: {prediction:.1f} mmHg ± {confidence:.1f}")
-                if prediction < 16:
-                    st.success("📗 Normal")
-                elif prediction < 20:
-                    st.warning("📙 Borderline")
-                else:
-                    st.error("📕 Elevated")
+        if uploaded_file.name.endswith(".csv"):
+            df = pd.read_csv(uploaded_file)
         else:
-            st.error("❌ Please fill all input fields.")
-
-# ------------------ Batch Prediction ------------------
-def batch_prediction_mode(model_data):
-    st.header("📊 Batch Prediction")
-    
-    st.write("Upload an Excel file with patient data (features should match model features).")
-    uploaded_file = st.file_uploader("Upload Excel file", type=['xlsx','xls'])
-    
-    if uploaded_file is not None:
-        try:
             df = pd.read_excel(uploaded_file)
-            st.success(f"✅ File loaded: {len(df)} patients")
-            st.dataframe(df.head())
-            
-            missing = set(model_data['features']) - set(df.columns)
-            if missing:
-                st.error(f"Missing features in uploaded file: {missing}")
-                return
-            
-            if st.button("🚀 Run Batch Predictions"):
-                X = df[model_data['features']]
-                X_scaled = model_data['scaler'].transform(X)
-                preds = model_data['model'].predict(X_scaled)
-                df['Predicted_LVEDP'] = preds
-                df['Confidence'] = 1.96 * model_data['performance']['test_mae']
-                
-                def interpret(x):
-                    if x < 16: return 'Normal'
-                    elif x < 20: return 'Borderline'
-                    else: return 'Elevated'
-                df['Clinical_Status'] = df['Predicted_LVEDP'].apply(interpret)
-                
-                st.subheader("📈 Prediction Results")
-                st.dataframe(df)
-                
-                csv = df.to_csv(index=False)
-                st.download_button("📥 Download CSV", data=csv, file_name="lvedp_predictions.csv")
-        except Exception as e:
-            st.error(f"❌ Error reading file: {e}")
-
-# ------------------ Model Info ------------------
-def model_information_mode(model_data):
-    st.header("ℹ️ Model Information")
-    st.write(f"**Model Type:** {model_data['model_type']}")
-    st.write(f"**Target:** {model_data['target']}")
-    st.write(f"Number of Features: {len(model_data['features'])}")
-    st.write(f"Training samples: {model_data['data_info']['training_samples']}")
-    st.write(f"Test samples: {model_data['data_info']['test_samples']}")
+    except Exception as e:
+        st.error(f"Error reading file: {e}")
+        st.stop()
     
-    perf = model_data['performance']
-    st.write(f"Test MAE: {perf['test_mae']:.3f}")
-    st.write(f"Test R²: {perf['test_r2']:.3f}")
+    st.success(f"Data loaded successfully! Shape: {df.shape}")
+    
+    # Ensure required features exist
+    missing_features = [f for f in features if f not in df.columns]
+    if missing_features:
+        st.warning(f"Missing features in uploaded data: {missing_features}")
+    
+    # ===========================
+    # 3. Predictions
+    # ===========================
+    df_features = df[features].copy()
+    df_features = df_features.fillna(df_features.median())  # fill missing
+    X_scaled = scaler.transform(df_features)
+    predictions = optimized_ensemble.predict(X_scaled)
+    df["Predicted_LVEDP"] = predictions
+    
+    st.subheader("Predictions")
+    st.dataframe(df[[*features, "Predicted_LVEDP"]].head(20))
+    
+    # ===========================
+    # 4. Statistical Visualizations
+    # ===========================
+    st.subheader("📊 Statistical Plots")
+    
+    # Feature distributions
+    st.markdown("**Feature Distributions**")
+    fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(15,8))
+    axes = axes.flatten()
+    for i, col in enumerate(features[:6]):  # show first 6 features
+        sns.histplot(df[col], kde=True, ax=axes[i], color='skyblue', bins=15)
+        axes[i].set_title(f'{col}')
+    plt.tight_layout()
+    st.pyplot(fig)
+    
+    # Correlation heatmap
+    st.markdown("**Correlation Heatmap**")
+    fig, ax = plt.subplots(figsize=(10,8))
+    corr = df[features].corr()
+    sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f", ax=ax)
+    st.pyplot(fig)
+    
+    # Actual vs Predicted (if actual target exists)
+    if target in df.columns:
+        st.markdown("**Actual vs Predicted**")
+        fig, ax = plt.subplots(figsize=(7,6))
+        sns.scatterplot(x=df[target], y=df["Predicted_LVEDP"], s=70, color='blue', alpha=0.6, ax=ax)
+        ax.plot([df[target].min(), df[target].max()], [df[target].min(), df[target].max()], 'r--', linewidth=2)
+        ax.set_xlabel("Actual LVEDP")
+        ax.set_ylabel("Predicted LVEDP")
+        st.pyplot(fig)
+        
+        # Residuals
+        st.markdown("**Residual Analysis**")
+        residuals = df[target] - df["Predicted_LVEDP"]
+        fig, ax = plt.subplots(figsize=(7,6))
+        sns.scatterplot(x=df["Predicted_LVEDP"], y=residuals, s=60, color='purple', alpha=0.6, ax=ax)
+        ax.axhline(0, color='red', linestyle='--', linewidth=2)
+        ax.set_xlabel("Predicted Values")
+        ax.set_ylabel("Residuals")
+        st.pyplot(fig)
+        
+        # Error Distribution
+        st.markdown("**Absolute Error Distribution**")
+        fig, ax = plt.subplots(figsize=(7,6))
+        sns.histplot(np.abs(residuals), bins=20, kde=True, color='orange', ax=ax)
+        ax.axvline(np.mean(np.abs(residuals)), color='red', linestyle='--', label=f"Mean Abs Error: {np.mean(np.abs(residuals)):.2f}")
+        ax.set_xlabel("Absolute Error")
+        ax.set_ylabel("Density")
+        ax.legend()
+        st.pyplot(fig)
+    
+    # Feature Importance (if RandomForest exists)
+    st.markdown("**Feature Importance (Random Forest)**")
+    rf_model = optimized_ensemble.estimators_[0]
+    if hasattr(rf_model, "feature_importances_"):
+        importances = rf_model.feature_importances_
+        fi_df = pd.DataFrame({'Feature': features, 'Importance': importances}).sort_values('Importance', ascending=True)
+        fig, ax = plt.subplots(figsize=(8,6))
+        sns.barplot(x='Importance', y='Feature', data=fi_df, palette='viridis', ax=ax)
+        st.pyplot(fig)
 
-# ------------------ Run App ------------------
-if __name__ == "__main__":
-    main()
