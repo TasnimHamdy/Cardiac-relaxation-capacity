@@ -15,7 +15,18 @@ def load_model():
 model_data = load_model()
 model = model_data['model']
 scaler = model_data['scaler']
-features = model_data['features']
+
+# Define features explicitly
+features = [
+    "LVEF (%)",
+    "Ischemia duration (hr)",
+    "LV global long. Strain (%)",
+    "LA reservoir (%)",
+    "E/E`",
+    "Non-Ant STEMI",
+    "LA contraction (%)",
+    "Mitral E velocity (cm/s)"
+]
 
 st.title("LVEDP Prediction App")
 st.write("### Choose Prediction Mode")
@@ -33,7 +44,7 @@ if prediction_type == "Single Prediction":
     
     if st.button("Predict LVEDP"):
         X_input = pd.DataFrame([input_data])
-        X_scaled = scaler.transform(X_input[features])
+        X_scaled = scaler.transform(X_input)
         pred = model.predict(X_scaled)
         st.success(f"Predicted LVEDP: {pred[0]:.2f} mmHg")
 
@@ -63,3 +74,4 @@ else:
             output_file = "LVEDP_Predictions.xlsx"
             df.to_excel(output_file, index=False)
             st.download_button("Download Predictions", output_file)
+
