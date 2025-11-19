@@ -7,7 +7,7 @@ import joblib
 # =========================
 @st.cache_data
 def load_model():
-    model_data = joblib.load("optimized_lvedp_model_13_features.joblib")
+    model_data = joblib.load("optimized_lvedp_model_features.joblib")
     return model_data
 
 model_data = load_model()
