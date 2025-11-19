@@ -19,38 +19,38 @@ features = model_data['features']
 # Streamlit App
 # =========================
 st.set_page_config(
-    page_title="LVEDP Prediction App",
+    page_title="LVEDP Prediction",
+    page_icon="❤️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 st.markdown(
     """
-    <div style='text-align: center; background-color: #f2f2f2; padding: 10px; border-radius: 10px'>
-        <h1 style='color: #333333;'>LVEDP Prediction App</h1>
-        <p>Enter patient data to predict LVEDP (mmHg)</p>
+    <div style='text-align: center; background-color: #E8F0F2; padding: 15px; border-radius: 10px'>
+        <h1 style='color: #2C3E50;'>LVEDP Prediction App</h1>
+        <p style='color: #34495E;'>Enter patient data to predict LVEDP (mmHg)</p>
     </div>
     """, unsafe_allow_html=True
 )
 
-# ------------------------
-# User Inputs in Columns
-# ------------------------
 st.subheader("Patient Data Input")
-cols = st.columns(2)  # 2 columns for better layout
+cols = st.columns(2)  # تقسيم الأعمدة
 
 input_data = {}
 for i, feat in enumerate(features):
     with cols[i % 2]:
-        input_data[feat] = st.number_input(feat, value=0.0, step=0.1)
+        # تحويل Non-Ant STEMI لرقم 0 أو 1
+        if feat.lower() == "non-ant stemi":
+            input_data[feat] = st.selectbox(feat, options=[0, 1], index=0, help="0 = No, 1 = Yes")
+        else:
+            input_data[feat] = st.number_input(feat, value=0.0, step=0.1)
 
-# ------------------------
-# Prediction Button
-# ------------------------
 st.markdown("<hr>", unsafe_allow_html=True)
+
 if st.button("Predict LVEDP"):
     X_input = pd.DataFrame([input_data])
     X_scaled = scaler.transform(X_input)
     pred = model.predict(X_scaled)
     st.success(f"Predicted LVEDP: {pred[0]:.2f} mmHg")
-    st.balloons()  # Fun effect when prediction is done
+    st.balloons()
