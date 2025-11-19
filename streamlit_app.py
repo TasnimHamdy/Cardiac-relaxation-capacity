@@ -34,7 +34,7 @@ input_data = {}
 cols = st.columns(2)
 for i, feat in enumerate(features):
     col = cols[i % 2]
-    if feat == "Ant STEMI":
+    if feat == "Ant STEMI ":
         input_data[feat] = col.selectbox(
             feat, options=[0, 1], index=0, help="0 = No, 1 = Yes"
         )
