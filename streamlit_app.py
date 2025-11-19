@@ -4,10 +4,8 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.preprocessing import StandardScaler
-import os
 import warnings
+import os
 warnings.filterwarnings('ignore')
 
 # ------------------ Page Configuration ------------------
@@ -32,9 +30,6 @@ st.markdown("""
         padding: 1.5rem;
         border-radius: 10px;
         border-left: 5px solid #1f77b4;
-        margin-bottom: 1rem;
-    }
-    .feature-input {
         margin-bottom: 1rem;
     }
 </style>
