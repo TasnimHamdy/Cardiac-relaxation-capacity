@@ -21,24 +21,25 @@ features = model_data['features']
 st.set_page_config(
     page_title="LVEDP Prediction",
     page_icon="❤️",
-    layout="centered",
-    initial_sidebar_state="expanded"
+    layout="centered"
 )
 
-st.title("❤️ LVEDP Prediction App")
-st.write("Enter patient data to predict LVEDP (mmHg)")
+st.markdown("<h1 style='text-align:center; color:red;'>❤️ LVEDP Prediction App</h1>", unsafe_allow_html=True)
+st.markdown("### Enter patient data to predict LVEDP (mmHg)")
 
 # ------------------------
-# User Inputs
+# User Inputs in 2 columns
 # ------------------------
 input_data = {}
-for feat in features:
+cols = st.columns(2)
+for i, feat in enumerate(features):
+    col = cols[i % 2]
     if feat == "Ant STEMI":
-        input_data[feat] = st.selectbox(
+        input_data[feat] = col.selectbox(
             feat, options=[0, 1], index=0, help="0 = No, 1 = Yes"
         )
     else:
-        input_data[feat] = st.number_input(
+        input_data[feat] = col.number_input(
             feat, value=0.0, step=0.1, format="%.2f"
         )
 
@@ -47,10 +48,8 @@ st.markdown("---")
 # ------------------------
 # Prediction Button
 # ------------------------
-if st.button("Predict LVEDP"):
+if st.button("Predict LVEDP ❤️"):
     X_input = pd.DataFrame([input_data])
     X_scaled = scaler.transform(X_input)
     pred = model.predict(X_scaled)
     st.success(f"Predicted LVEDP: {pred[0]:.2f} mmHg")
-
-
