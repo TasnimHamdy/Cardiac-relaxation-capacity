@@ -13,7 +13,10 @@ def load_model():
 model_data = load_model()
 model = model_data['model']
 scaler = model_data['scaler']
-features = model_data['features']
+
+# فقط الـ 8 Features اللي عايزاها
+features = ['LVEF (%)', 'Ischemia duration (hr) ', 'LV global long. Strain (%)',
+            'LA reservoir (%)', 'E/E`', 'Non-Ant STEMI', 'LA contraction (%)', 'Mitral E velocity (cm/s)']
 
 st.title("LVEDP Prediction App")
 st.write("Choose prediction type:")
@@ -27,12 +30,18 @@ if prediction_type == "Single Prediction":
     st.subheader("Enter Patient Data")
     
     input_data = {}
-    for feat in features:
-        input_data[feat] = st.number_input(feat, value=0.0)
+    input_data['LVEF (%)'] = st.slider("LVEF (%)", 10, 80, 55)
+    input_data['Ischemia duration (hr) '] = st.slider("Ischemia duration (hr)", 0, 24, 3)
+    input_data['LV global long. Strain (%)'] = st.slider("LV global long. Strain (%)", -30, 0, -15)
+    input_data['LA reservoir (%)'] = st.slider("LA reservoir (%)", 0, 80, 40)
+    input_data['E/E`'] = st.slider("E/E`", 0, 30, 10)
+    input_data['Non-Ant STEMI'] = st.selectbox("Non-Ant STEMI", [0, 1])
+    input_data['LA contraction (%)'] = st.slider("LA contraction (%)", 0, 50, 25)
+    input_data['Mitral E velocity (cm/s)'] = st.slider("Mitral E velocity (cm/s)", 20, 150, 80)
     
     if st.button("Predict LVEDP"):
         X_input = pd.DataFrame([input_data])
-        X_scaled = scaler.transform(X_input)
+        X_scaled = scaler.transform(X_input[features])
         pred = model.predict(X_scaled)
         st.success(f"Predicted LVEDP: {pred[0]:.2f} mmHg")
 
