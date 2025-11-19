@@ -1,4 +1,5 @@
 # streamlit_app.py
+from joblib import load
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -43,8 +44,10 @@ st.markdown("""
 def load_model():
     """Load the trained model"""
     try:
-        with open("optimized_lvedp_model.pkl", "rb") as f:
-            return pickle.load(f)
+        return load("optimized_lvedp_model.joblib")
+    except FileNotFoundError:
+        st.error("❌ Model file not found. Please make sure 'optimized_lvedp_model.joblib' is in the same directory.")
+        return None
     except FileNotFoundError:
         st.error("❌ Model file not found. Please make sure 'optimized_lvedp_model.pkl' is in the same directory.")
         st.info("💡 Run 'train_model.py' first to train and save the model.")

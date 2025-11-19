@@ -1,0 +1,28 @@
+
+LVEDP PREDICTION MODEL - OPTIMIZATION REPORT
+Generated on: 2025-11-19 10:29:45
+
+OPTIMIZATION STRATEGIES APPLIED:
+1. Advanced Feature Selection (Lasso + Random Forest)
+2. Fixed SMOTE with Proper Broadcasting
+3. Stratified Data Splitting
+4. Strong Model Regularization
+5. Comprehensive Cross-Validation
+
+PERFORMANCE METRICS:
+- Training MAE: 0.6642
+- Testing MAE: 0.9883
+- Overfitting Gap: 0.3240
+- Testing R²: 0.9097
+- Cross-validation MAE: 0.8879 ± 0.1459
+
+DATA INFORMATION:
+- Original samples: 102
+- After SMOTE: 132
+- Training samples: 99
+- Test samples: 33
+- Selected features: 8
+
+OVERFITTING ASSESSMENT: ⚠️ NEEDS MONITORING
+
+RECOMMENDATION: Suitable for use with monitoring
