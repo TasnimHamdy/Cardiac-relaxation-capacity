@@ -42,15 +42,21 @@ for i, feat in enumerate(features):
     with cols[i % 2]:
         # تحويل Non-Ant STEMI لرقم 0 أو 1
         if feat.lower() == "non-ant stemi":
-            input_data[feat] = st.selectbox(feat, options=[0, 1], index=0, help="0 = No, 1 = Yes")
+            input_data[feat] = st.selectbox(
+                feat, options=[0, 1], index=0, help="0 = No, 1 = Yes"
+            )
         else:
-            input_data[feat] = st.number_input(feat, value=0.0, step=0.1)
+            input_data[feat] = st.number_input(
+                feat, value=0.0, step=0.1, format="%.2f"
+            )
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
 if st.button("Predict LVEDP"):
     X_input = pd.DataFrame([input_data])
+    # Scale features
     X_scaled = scaler.transform(X_input)
+    # Predict
     pred = model.predict(X_scaled)
     st.success(f"Predicted LVEDP: {pred[0]:.2f} mmHg")
-    st.balloons()
+
