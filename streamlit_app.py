@@ -18,24 +18,39 @@ features = model_data['features']
 # =========================
 # Streamlit App
 # =========================
-st.title("LVEDP Prediction App")
-st.write("Enter patient data to predict LVEDP:")
+st.set_page_config(
+    page_title="LVEDP Prediction App",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+st.markdown(
+    """
+    <div style='text-align: center; background-color: #f2f2f2; padding: 10px; border-radius: 10px'>
+        <h1 style='color: #333333;'>LVEDP Prediction App</h1>
+        <p>Enter patient data to predict LVEDP (mmHg)</p>
+    </div>
+    """, unsafe_allow_html=True
+)
 
 # ------------------------
-# User Inputs
+# User Inputs in Columns
 # ------------------------
+st.subheader("Patient Data Input")
+cols = st.columns(2)  # 2 columns for better layout
+
 input_data = {}
-for feat in features:
-    # For simplicity, all features are number inputs
-    input_data[feat] = st.number_input(feat, value=0.0)
+for i, feat in enumerate(features):
+    with cols[i % 2]:
+        input_data[feat] = st.number_input(feat, value=0.0, step=0.1)
 
 # ------------------------
 # Prediction Button
 # ------------------------
+st.markdown("<hr>", unsafe_allow_html=True)
 if st.button("Predict LVEDP"):
     X_input = pd.DataFrame([input_data])
-    # Scale features
     X_scaled = scaler.transform(X_input)
-    # Predict
     pred = model.predict(X_scaled)
     st.success(f"Predicted LVEDP: {pred[0]:.2f} mmHg")
+    st.balloons()  # Fun effect when prediction is done
