@@ -22,14 +22,14 @@ st.set_page_config(
     page_title="LVEDP Prediction",
     page_icon="❤️",
     layout="centered",
-    initial_sidebar_state="auto"
+    initial_sidebar_state="expanded"
 )
 
 st.title("❤️ LVEDP Prediction App")
 st.write("Enter patient data to predict LVEDP (mmHg)")
 
 # ------------------------
-# User Inputs (linear)
+# User Inputs
 # ------------------------
 input_data = {}
 for feat in features:
@@ -52,4 +52,5 @@ if st.button("Predict LVEDP"):
     X_scaled = scaler.transform(X_input)
     pred = model.predict(X_scaled)
     st.success(f"Predicted LVEDP: {pred[0]:.2f} mmHg")
+
 
